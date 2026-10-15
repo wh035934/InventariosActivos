@@ -1,0 +1,133 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 14px;
+  position: relative;
+  min-height: 100%;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  background: #f5f5f5;
+  color: #1f1f1f;
+}
+
+h1 {
+  font-size: 28px;
+  font-weight: 600;
+}
+
+h2 {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* Layout tipo app.tsx: sidebar + contenido */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  text-align: left;
+}
+
+.contenido {
+  flex: 1;
+  padding: 20px;
+  background: #f5f5f5;
+  min-width: 0;
+}
+
+.contenido h1 {
+  text-align: center;
+  margin: 0 0 20px 0;
+}
+
+/* Sidebar oscuro como menu.tsx (#001529) */
+.sidebar {
+  width: 256px;
+  min-height: 100vh;
+  background-color: #001529;
+  transition: width 0.2s;
+  flex-shrink: 0;
+  overflow-x: hidden;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+}
+
+.sidebar-title {
+  color: white;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 0 8px 16px 8px;
+}
+
+.sidebar-link {
+  color: rgba(255, 255, 255, 0.65);
+  text-decoration: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-link svg {
+  flex-shrink: 0;
+}
+
+.sidebar-link:hover {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Estado colapsado (como collapsed de menu.tsx: 80px) */
+.app-container.sidebar-collapsed .sidebar {
+  width: 80px;
+}
+
+.app-container.sidebar-collapsed .sidebar-title {
+  display: none;
+}
+
+.app-container.sidebar-collapsed .sidebar-header {
+  justify-content: center;
+}
+
+.app-container.sidebar-collapsed .sidebar-link {
+  justify-content: center;
+  padding: 12px 4px;
+}
+
+.app-container.sidebar-collapsed .sidebar-link svg {
+  width: 22px;
+  height: 22px;
+}
+
+.app-container.sidebar-collapsed .sidebar-text {
+  display: none;
+}
+
+.footer {
+  margin-top: 24px;
+  color: #6c757d;
+}

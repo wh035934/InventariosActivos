@@ -1,0 +1,46 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Inicio";
+}
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Modelo</th>
+                        <th>Categoría</th>
+                        <th>Ubicación</th>
+                        <th>Cantidad</th>
+                        <th>Estado</th>
+                        <th>Fecha de registro</th>
+                        <th>Precio</th>
+                        <th>Descripción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.Productos)
+                    {
+                        var badge = p.Estado == "danado" ? "bg-danger" : p.Estado == "en reparacion" ? "bg-warning text-dark" : "bg-success";
+                        <tr>
+                            <td>@p.Id</td>
+                            <td>@p.Nombre</td>
+                            <td>@p.Modelo</td>
+                            <td>@p.Categoria</td>
+                            <td>@p.Ubicacion</td>
+                            <td>@p.Cantidad</td>
+                            <td><span class="badge @badge">@p.Estado.ToUpper()</span></td>
+                            <td>@p.FechaRegistro</td>
+                            <td>$@p.Precio.ToString("F2")</td>
+                            <td>@p.Descripcion</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
