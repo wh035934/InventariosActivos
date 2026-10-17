@@ -1,7 +1,9 @@
+using System.ComponentModel.DataAnnotations;
 namespace InventarioActivos.Models;
 
 public class Usuario
 {
+    [Key]
     public string Key { get; set; } = Guid.NewGuid().ToString();
     public string Nombre { get; set; } = "";
     public string Correo { get; set; } = "";
