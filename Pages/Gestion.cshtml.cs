@@ -33,7 +33,14 @@ public class GestionModel : PageModel
                 {
                     Id = found.Id,            
                     Nombre = found.Nombre,
-                    Precio = found.Precio
+                    Modelo = found.Modelo,
+                    Categoria = found.Categoria,
+                    Ubicacion = found.Ubicacion,
+                    Cantidad = found.Cantidad,
+                    Estado = found.Estado,
+                    FechaRegistro = found.FechaRegistro,
+                    Precio = found.Precio,
+                    Descripcion = found.Descripcion
                 };
             }
         }
@@ -50,8 +57,16 @@ public class GestionModel : PageModel
             var found = await _context.Productos.FindAsync(Input.Id);   
             if (found is not null)
             {
-                found.Nombre = Input.Nombre;              
+                found.Id = Input.Id;
+                found.Nombre = Input.Nombre;
+                found.Modelo = Input.Modelo;
+                found.Categoria = Input.Categoria;
+                found.Ubicacion = Input.Ubicacion;
+                found.Cantidad = Input.Cantidad;
+                found.Estado = Input.Estado;
+                found.FechaRegistro = Input.FechaRegistro;             
                 found.Precio = Input.Precio;
+                found.Descripcion = Input.Descripcion;
             }
         }
         await _context.SaveChangesAsync();                 

@@ -24,7 +24,7 @@ public class ProvedoresModel : PageModel
                 {
                     Id = found.Id,
                     Nombre = found.Nombre,
-                    Contacto = found.Contacto,
+                    Ubicacion = found.Ubicacion,
                     Telefono = found.Telefono,
                     Correo = found.Correo,
                 };
@@ -45,7 +45,7 @@ public class ProvedoresModel : PageModel
             if (found is not null)
             {
                 found.Nombre = Input.Nombre;
-                found.Contacto = Input.Contacto;
+                found.Ubicacion = Input.Ubicacion;
                 found.Telefono = Input.Telefono;
                 found.Correo = Input.Correo;
             }

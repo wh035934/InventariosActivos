@@ -2,8 +2,7 @@ using InventarioActivos.Models;
 
 namespace InventarioActivos.Data;
 
-// Equivale a data/mock.ts + useState de app.tsx / usuario.tsx.
-// Todo vive en memoria, sin BD externa.
+
 public static class InventarioStore
 {
     public static List<Producto> Productos { get; } = new();
