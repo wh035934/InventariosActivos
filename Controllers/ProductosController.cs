@@ -26,4 +26,11 @@ public class InventarioController : ControllerBase
       }
       return producto;
   }
+  [HttpPost]
+  public async Task<ActionResult<Producto>> Post([FromBody] Producto Producto)
+  {
+    _context.Productos.Add(Producto);
+    await _context.SaveChangesAsync();
+    return CreatedAtAction(nameof(GetById), new { id = Producto.Id }, Producto);
+}
 }

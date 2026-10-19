@@ -6,9 +6,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages();
 builder.Services.AddControllers();
 builder.Configuration.AddUserSecrets<Program>(optional: true);
-var app = builder.Build();
 builder.Services.AddDbContext<InventarioContext>(options =>
 options.UseNpgsql(builder.Configuration.GetConnectionString("InventariosActivos")));
+
+var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

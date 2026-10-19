@@ -3,8 +3,8 @@ namespace InventarioActivos.Models;
 
 public class Usuario
 {
-    [Key]
-    public string Key { get; set; } = Guid.NewGuid().ToString();
+    
+    public string Id { get; set; } = Guid.NewGuid().ToString();
     public string Nombre { get; set; } = "";
     public string Correo { get; set; } = "";
     public string Area { get; set; } = "";
