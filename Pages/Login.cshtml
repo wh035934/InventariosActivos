@@ -1,0 +1,41 @@
+@page
+@model LoginModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Iniciar sesión";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Iniciar sesión - Sistema de Inventario</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="d-flex align-items-center justify-content-center" style="min-height:100vh; background:#f5f5f5;">
+    <div class="w-100" style="max-width:400px;">
+        <h2 class="text-center mb-1">¡Bienvenido de nuevo!</h2>
+        <p class="text-center text-muted mb-4">Sistema de Inventario</p>
+        <div class="card">
+            <div class="card-body p-4">
+                <form method="post">
+                    @if (Model.Error is not null)
+                    {
+                        <div class="alert alert-danger" role="alert">@Model.Error</div>
+                    }
+                    <div class="mb-3">
+                        <label class="form-label">Correo electrónico</label>
+                        <input class="form-control" asp-for="Input.Correo" placeholder="tu@correo.com" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Contraseña</label>
+                        <input class="form-control" asp-for="Input.Contrasena" type="password" placeholder="Tu contraseña" required />
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Iniciar sesión</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

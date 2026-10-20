@@ -1,5 +1,8 @@
+using System.Security.Claims;
 using InventarioActivos.Data;
 using InventarioActivos.Models;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -14,14 +17,40 @@ public class UsuarioModel : PageModel
     [BindProperty]
     public Usuario Input { get; set; } = new();
 
+    [BindProperty]
+    public Usuario PerfilInput { get; set; } = new();
+
     public void OnGet(string? ver)
     {
         Usuarios = InventarioStore.Usuarios;
-        Actual = InventarioStore.Usuarios.FirstOrDefault();
+        Actual = ObtenerActual();
+        if (Actual is not null)
+        {
+            PerfilInput = new Usuario
+            {
+                Id = Actual.Id,
+                Nombre = Actual.Nombre,
+                Correo = Actual.Correo,
+                Area = Actual.Area,
+                Rol = Actual.Rol
+            };
+        }
         if (!string.IsNullOrEmpty(ver))
         {
             Seleccionado = InventarioStore.Usuarios.FirstOrDefault(u => u.Id == ver);
         }
+    }
+
+    private Usuario? ObtenerActual()
+    {
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            return null;
+        }
+        var id = User.FindFirst("UsuarioId")?.Value;
+        return string.IsNullOrEmpty(id)
+            ? null
+            : InventarioStore.Usuarios.FirstOrDefault(u => u.Id == id);
     }
 
     public IActionResult OnPostCrear()
@@ -39,6 +68,25 @@ public class UsuarioModel : PageModel
         {
             InventarioStore.Usuarios.Remove(found);
         }
+        return RedirectToPage();
+    }
+
+    public IActionResult OnPostEditarPerfil()
+    {
+        var actual = ObtenerActual();
+        if (actual is not null)
+        {
+            actual.Nombre = PerfilInput.Nombre;
+            actual.Correo = PerfilInput.Correo;
+            actual.Area = PerfilInput.Area;
+            actual.Rol = PerfilInput.Rol;
+        }
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostSalir()
+    {
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return RedirectToPage();
     }
 }
