@@ -12,8 +12,12 @@
             <input type="hidden" asp-for="Input.Id" />
             <div class="row g-3">
                 <div class="col-md-4">
-                    <label class="form-label">Nombre entrega</label>
+                    <label class="form-label">Nombre</label>
                     <input class="form-control" asp-for="Input.Nombre" required />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Puesto</label>
+                    <input class="form-control" asp-for="Input.Puesto" required />
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Área</label>
@@ -50,7 +54,8 @@
             <table class="table table-striped table-hover align-middle">
                 <thead>
                     <tr>
-                        <th>Nombre de la Entrega</th>
+                        <th>Nombre</th>
+                        <th>Puesto</th>
                         <th>Área</th>
                         <th>Estado</th>
                         <th>Accion</th>
@@ -62,6 +67,7 @@
                         var badge = e.Estado == "urgente" ? "bg-danger" : e.Estado.Length > 5 ? "bg-primary" : "bg-success";
                         <tr>
                             <td>@e.Nombre</td>
+                            <td>@e.Puesto</td>
                             <td>@e.Area</td>
                             <td><span class="badge @badge">@e.Estado.ToUpper()</span></td>
                             <td>

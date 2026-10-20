@@ -2,6 +2,7 @@ using InventarioActivos.Data;
 using InventarioActivos.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 
 namespace InventarioActivos.Pages;
 
@@ -11,13 +12,19 @@ public class ProvedoresModel : PageModel
 
     [BindProperty]
     public Proveedor Input { get; set; } = new();
+    private readonly InventarioContext _context;
 
-    public void OnGet(int? editId)
+    public ProvedoresModel(InventarioContext context)
     {
-        Proveedores = InventarioStore.Proveedores;
+        _context = context;
+    }
+
+    public async Task OnGet(int? editId)
+    {
+        Proveedores = await _context.Proveedores.ToListAsync();
         if (editId.HasValue)
         {
-            var found = InventarioStore.Proveedores.FirstOrDefault(p => p.Id == editId.Value);
+            var found = await _context.Proveedores.FindAsync(editId.Value);
             if (found is not null)
             {
                 Input = new Proveedor
@@ -32,16 +39,15 @@ public class ProvedoresModel : PageModel
         }
     }
 
-    public IActionResult OnPostGuardar()
+    public async Task<IActionResult> OnPostGuardar()
     {
         if (Input.Id == 0)
         {
-            Input.Id = InventarioStore.NextProveedorId();
-            InventarioStore.Proveedores.Add(Input);
+            _context.Proveedores.Add(Input);
         }
         else
         {
-            var found = InventarioStore.Proveedores.FirstOrDefault(p => p.Id == Input.Id);
+            var found = await _context.Proveedores.FindAsync(Input.Id);
             if (found is not null)
             {
                 found.Nombre = Input.Nombre;
@@ -50,16 +56,18 @@ public class ProvedoresModel : PageModel
                 found.Correo = Input.Correo;
             }
         }
+        await _context.SaveChangesAsync();
         return RedirectToPage();
     }
 
-    public IActionResult OnPostEliminar(int id)
+    public async Task<IActionResult> OnPostEliminar(int id)
     {
-        var found = InventarioStore.Proveedores.FirstOrDefault(p => p.Id == id);
+        var found = await _context.Proveedores.FindAsync(id);
         if (found is not null)
         {
-            InventarioStore.Proveedores.Remove(found);
+            _context.Proveedores.Remove(found);
         }
+        await _context.SaveChangesAsync();
         return RedirectToPage();
     }
 }

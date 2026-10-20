@@ -2,6 +2,7 @@ using InventarioActivos.Data;
 using InventarioActivos.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 
 namespace InventarioActivos.Pages;
 
@@ -11,47 +12,62 @@ public class EntregasModel : PageModel
 
     [BindProperty]
     public Entrega Input { get; set; } = new();
-
-    public void OnGet(int? editId)
+    private readonly InventarioContext _context;
+    public EntregasModel(InventarioContext context)
     {
-        Entregas = InventarioStore.Entregas;
+        _context = context;
+    }
+
+    public async Task OnGet(int? editId)
+    {
+        Entregas = await _context.Entregas.ToListAsync();
         if (editId.HasValue)
         {
-            var found = InventarioStore.Entregas.FirstOrDefault(e => e.Id == editId.Value);
+            var found = await _context.Entregas.FindAsync(editId.Value);
             if (found is not null)
             {
-                Input = new Entrega { Id = found.Id, Nombre = found.Nombre, Area = found.Area, Estado = found.Estado };
+                Input = new Entrega 
+                {
+                    Id = found.Id, 
+                    Nombre = found.Nombre, 
+                    Puesto = found.Puesto, 
+                    Area = found.Area, 
+                    Estado = found.Estado
+                    
+                };
             }
         }
     }
 
-    public IActionResult OnPostGuardar()
+    public async Task<IActionResult> OnPostGuardar()
     {
         if (Input.Id == 0)
         {
-            Input.Id = InventarioStore.NextEntregaId();
-            InventarioStore.Entregas.Add(Input);
+            _context.Entregas.Add(Input);
         }
         else
         {
-            var found = InventarioStore.Entregas.FirstOrDefault(e => e.Id == Input.Id);
+            var found = await _context.Entregas.FindAsync(Input.Id);
             if (found is not null)
             {
                 found.Nombre = Input.Nombre;
+                found.Puesto = Input.Puesto;
                 found.Area = Input.Area;
                 found.Estado = Input.Estado;
             }
         }
+        await _context.SaveChangesAsync();
         return RedirectToPage();
     }
 
-    public IActionResult OnPostEliminar(int id)
+    public async Task<IActionResult> OnPostEliminar(int id)
     {
-        var found = InventarioStore.Entregas.FirstOrDefault(e => e.Id == id);
+        var found = await _context.Entregas.FindAsync(id);
         if (found is not null)
         {
-            InventarioStore.Entregas.Remove(found);
+            _context.Entregas.Remove(found);
         }
+        await _context.SaveChangesAsync();
         return RedirectToPage();
     }
 }
