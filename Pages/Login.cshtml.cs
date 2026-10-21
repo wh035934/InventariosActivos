@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 
 namespace InventarioActivos.Pages;
 
@@ -15,20 +16,22 @@ public class LoginModel : PageModel
 
     public string? Error { get; set; }
 
-    // Credenciales ESTÁTICas (temporal) - mismas del proyecto React.
-    // Pendiente: validar contra la tabla Usuarios en Supabase.
+    private readonly InventarioContext _context;
+
+    public LoginModel(InventarioContext context)
+    {
+        _context = context;
+    }
+
     private const string CorreoEstatico = "wh035934@gmail.com";
     private const string ContrasenaEstatica = "321contra";
 
-    public void OnGet()
-    {
-    }
 
     public async Task<IActionResult> OnPostAsync()
     {
         if (Input.Correo == CorreoEstatico && Input.Contrasena == ContrasenaEstatica)
         {
-            var usuario = InventarioStore.Usuarios.FirstOrDefault(u => u.Correo == CorreoEstatico);
+            var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Correo == CorreoEstatico);
             if (usuario is null)
             {
                 usuario = new Usuario
@@ -40,7 +43,9 @@ public class LoginModel : PageModel
                     Rol = "Administrador",
                     Fecha = DateTime.Now.ToString("dd/MM/yyyy")
                 };
+                await _context.Usuarios.AddAsync(usuario);
                 InventarioStore.Usuarios.Add(usuario);
+                await _context.SaveChangesAsync();
             }
 
             var claims = new List<Claim>
@@ -53,7 +58,6 @@ public class LoginModel : PageModel
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 new ClaimsPrincipal(identity));
 
-            // Si venía de querer entrar a una página, regresa ahí; si no, a Inicio (como el React)
             var returnUrl = Request.Query["ReturnUrl"].FirstOrDefault();
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
