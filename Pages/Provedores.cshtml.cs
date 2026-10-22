@@ -62,6 +62,10 @@ public class ProvedoresModel : PageModel
 
     public async Task<IActionResult> OnPostEliminar(int id)
     {
+        if (!User.IsInRole("Administrador"))
+    {
+        return Forbid();
+    }
         var found = await _context.Proveedores.FindAsync(id);
         if (found is not null)
         {
