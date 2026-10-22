@@ -19,18 +19,24 @@ public class UsuarioModel : PageModel
     public Usuario Input { get; set; } = new();
 
     [BindProperty]
-
     public Usuario PerfilInput { get; set; } = new();
-    private readonly InventarioContext _context;    
+
+
+    private readonly InventarioContext _context;
+
     public UsuarioModel(InventarioContext context)
     {
         _context = context;
     }
 
-    public void OnGet(string? ver)
+
+    public async Task OnGet(string? ver)
     {
-        Usuarios = InventarioStore.Usuarios;
-        Actual = ObtenerActual();
+
+        Usuarios = await _context.Usuarios.ToListAsync();
+
+        Actual = await ObtenerActualAsync();
+
         if (Actual is not null)
         {
             PerfilInput = new Usuario
@@ -42,13 +48,15 @@ public class UsuarioModel : PageModel
                 Rol = Actual.Rol
             };
         }
+
+
         if (!string.IsNullOrEmpty(ver))
         {
-            Seleccionado = InventarioStore.Usuarios.FirstOrDefault(u => u.Id == ver);
+            Seleccionado = await _context.Usuarios.FindAsync(ver);
         }
     }
 
-    private Usuario? ObtenerActual()
+    private async Task<Usuario?> ObtenerActualAsync()
     {
         if (User.Identity?.IsAuthenticated != true)
         {
@@ -57,39 +65,78 @@ public class UsuarioModel : PageModel
         var id = User.FindFirst("UsuarioId")?.Value;
         return string.IsNullOrEmpty(id)
             ? null
-            : InventarioStore.Usuarios.FirstOrDefault(u => u.Id == id);
+            : await _context.Usuarios.FindAsync(id);
     }
 
-    public IActionResult OnPostCrear()
+    public async Task<IActionResult> OnPostCrear()
     {
+        
+        var correoExiste = await _context.Usuarios
+            .AnyAsync(u => u.Correo == Input.Correo);
+        if (correoExiste)
+        {
+
+            ModelState.AddModelError("Input.Correo", "Ese correo ya está registrado");
+            await OnGet(null);          
+            return Page();              
+        }
+
+
+        if (string.IsNullOrWhiteSpace(Input.Contrasena))
+        {
+            ModelState.AddModelError("Input.Contrasena", "La contraseña es obligatoria");
+            await OnGet(null);
+            return Page();
+        }
+
         Input.Id = Guid.NewGuid().ToString();
         Input.Fecha = DateTime.Now.ToString("dd/MM/yyyy");
         Input.ContrasenaHash = PasswordHasher.Hash(Input.Contrasena);
-        Input.Contrasena = "";
-        InventarioStore.Usuarios.Add(Input);
-        return RedirectToPage();
+        Input.Contrasena = "";                      
+
+        await _context.Usuarios.AddAsync(Input);      
+        await _context.SaveChangesAsync();            
+        return RedirectToPage();                     
     }
 
-    public IActionResult OnPostEliminar(string id)
+
+    public async Task<IActionResult> OnPostEliminar(string id)
     {
-        var found = InventarioStore.Usuarios.FirstOrDefault(u => u.Id == id);
+
+        var found = await _context.Usuarios.FindAsync(id);
         if (found is not null)
         {
-            InventarioStore.Usuarios.Remove(found);
+
+            if (found.Id == User.FindFirst("UsuarioId")?.Value)
+            {
+                TempData["Error"] = "No puedes eliminar tu propia cuenta";
+                return RedirectToPage();
+            }
+            _context.Usuarios.Remove(found);           
+            await _context.SaveChangesAsync();         
         }
         return RedirectToPage();
     }
 
-    public IActionResult OnPostEditarPerfil()
+
+    public async Task<IActionResult> OnPostEditarPerfil()
     {
-        var actual = ObtenerActual();
-        if (actual is not null)
+        var actual = await ObtenerActualAsync();      
+        if (actual is null)
         {
-            actual.Nombre = PerfilInput.Nombre;
-            actual.Correo = PerfilInput.Correo;
-            actual.Area = PerfilInput.Area;
+            return RedirectToPage();
+        }
+
+        actual.Nombre = PerfilInput.Nombre;            
+        actual.Correo = PerfilInput.Correo;
+        actual.Area = PerfilInput.Area;
+
+        if (User.IsInRole("Administrador"))
+        {
             actual.Rol = PerfilInput.Rol;
         }
+
+        await _context.SaveChangesAsync();             
         return RedirectToPage();
     }
 
