@@ -135,6 +135,10 @@ namespace InventarioActivos.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("ContrasenaHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("Correo")
                         .IsRequired()
                         .HasColumnType("text");

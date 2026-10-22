@@ -23,51 +23,48 @@ public class LoginModel : PageModel
         _context = context;
     }
 
-    private const string CorreoEstatico = "wh035934@gmail.com";
-    private const string ContrasenaEstatica = "321contra";
-
-
     public async Task<IActionResult> OnPostAsync()
     {
-        if (Input.Correo == CorreoEstatico && Input.Contrasena == ContrasenaEstatica)
+        var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Correo == Input.Correo);
+
+        if (usuario is null && !await _context.Usuarios.AnyAsync())
         {
-            var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Correo == CorreoEstatico);
-            if (usuario is null)
+            usuario = new Usuario
             {
-                usuario = new Usuario
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    Nombre = "Juan Pérez",
-                    Correo = CorreoEstatico,
-                    Area = "Sistemas",
-                    Rol = "Administrador",
-                    Fecha = DateTime.Now.ToString("dd/MM/yyyy")
-                };
-                await _context.Usuarios.AddAsync(usuario);
-                InventarioStore.Usuarios.Add(usuario);
-                await _context.SaveChangesAsync();
-            }
-
-            var claims = new List<Claim>
-            {
-                new("UsuarioId", usuario.Id),
-                new(ClaimTypes.Name, usuario.Nombre)
+                Id = Guid.NewGuid().ToString(),
+                Nombre = Input.Correo.Split('@')[0],
+                Correo = Input.Correo,
+                Area = "Sistemas",
+                Rol = "Administrador",
+                Fecha = DateTime.Now.ToString("dd/MM/yyyy"),
+                ContrasenaHash = PasswordHasher.Hash(Input.Contrasena)
             };
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
-                new ClaimsPrincipal(identity));
-
-            var returnUrl = Request.Query["ReturnUrl"].FirstOrDefault();
-            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
-            {
-                return Redirect(returnUrl);
-            }
-            return Redirect("/");
+            _context.Usuarios.Add(usuario);
+            await _context.SaveChangesAsync();
         }
 
-        Error = "Usuario o contraseña incorrectos";
-        return Page();
+        if (usuario is null || !PasswordHasher.Verificar(Input.Contrasena, usuario.ContrasenaHash))
+        {
+            Error = "Usuario o contraseña incorrectos";
+            return Page();
+        }
+
+        var claims = new List<Claim>
+        {
+            new("UsuarioId", usuario.Id),
+            new(ClaimTypes.Name, usuario.Nombre)
+        };
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        await HttpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(identity));
+
+        var returnUrl = Request.Query["ReturnUrl"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+        return Redirect("/");
     }
 }
 

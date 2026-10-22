@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 
 namespace InventarioActivos.Pages;
 
@@ -18,7 +19,13 @@ public class UsuarioModel : PageModel
     public Usuario Input { get; set; } = new();
 
     [BindProperty]
+
     public Usuario PerfilInput { get; set; } = new();
+    private readonly InventarioContext _context;    
+    public UsuarioModel(InventarioContext context)
+    {
+        _context = context;
+    }
 
     public void OnGet(string? ver)
     {
@@ -57,6 +64,8 @@ public class UsuarioModel : PageModel
     {
         Input.Id = Guid.NewGuid().ToString();
         Input.Fecha = DateTime.Now.ToString("dd/MM/yyyy");
+        Input.ContrasenaHash = PasswordHasher.Hash(Input.Contrasena);
+        Input.Contrasena = "";
         InventarioStore.Usuarios.Add(Input);
         return RedirectToPage();
     }

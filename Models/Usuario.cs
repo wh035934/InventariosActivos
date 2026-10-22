@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 namespace InventarioActivos.Models;
 
 public class Usuario
@@ -10,4 +11,11 @@ public class Usuario
     public string Area { get; set; } = "";
     public string Rol { get; set; } = "Empleado";
     public string Fecha { get; set; } = "";
+
+    // Lo que la BD guarda: NUNCA la contraseña pura, sino su "impresión digital" (hash)
+    public string ContrasenaHash { get; set; } = "";
+
+    // Solo para el formulario: el usuario teclea esto, EF lo ignora (no es columna)
+    [NotMapped]
+    public string Contrasena { get; set; } = "";
 }

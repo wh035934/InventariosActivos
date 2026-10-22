@@ -125,6 +125,10 @@ else
                         <input class="form-control" asp-for="Input.Correo" placeholder="correo@empresa.com" required />
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Contraseña</label>
+                        <input class="form-control" asp-for="Input.Contrasena" type="password" placeholder="Mínimo 6 caracteres" required minlength="6" />
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Área</label>
                         <select class="form-select" asp-for="Input.Area" required>
                             <option value="Administrativa">Administrativa</option>
