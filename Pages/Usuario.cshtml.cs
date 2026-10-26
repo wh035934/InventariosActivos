@@ -70,10 +70,6 @@ public class UsuarioModel : PageModel
 
     public async Task<IActionResult> OnPostCrear()
     {
-        if (!User.IsInRole("Administrador"))
-    {
-        return Forbid();
-    }
         
         var correoExiste = await _context.Usuarios
             .AnyAsync(u => u.Correo == Input.Correo);
@@ -106,10 +102,6 @@ public class UsuarioModel : PageModel
 
     public async Task<IActionResult> OnPostEliminar(string id)
     {
-        if (!User.IsInRole("Administrador"))
-    {
-        return Forbid();
-    }
 
         var found = await _context.Usuarios.FindAsync(id);
         if (found is not null)
@@ -139,10 +131,6 @@ public class UsuarioModel : PageModel
         actual.Correo = PerfilInput.Correo;
         actual.Area = PerfilInput.Area;
 
-        if (User.IsInRole("Administrador"))
-        {
-            actual.Rol = PerfilInput.Rol;
-        }
 
         await _context.SaveChangesAsync();             
         return RedirectToPage();

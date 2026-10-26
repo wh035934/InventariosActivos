@@ -13,6 +13,8 @@ public class InventarioContext : DbContext
 
     public DbSet<Producto> Productos { get; set; }
     public DbSet<Entrega> Entregas { get; set; }
+    public DbSet<EntregaDetalle> EntregasDetalles { get; set; }
     public DbSet<Usuario> Usuarios { get; set; }
     public DbSet<Proveedor> Proveedores { get; set; }
+    public DbSet<Movimiento> Movimientos { get; set; }
 }

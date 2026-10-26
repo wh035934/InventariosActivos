@@ -41,37 +41,53 @@ public class ProvedoresModel : PageModel
 
     public async Task<IActionResult> OnPostGuardar()
     {
-        if (Input.Id == 0)
-        {
-            _context.Proveedores.Add(Input);
-        }
-        else
-        {
-            var found = await _context.Proveedores.FindAsync(Input.Id);
-            if (found is not null)
-            {
-                found.Nombre = Input.Nombre;
-                found.Ubicacion = Input.Ubicacion;
-                found.Telefono = Input.Telefono;
-                found.Correo = Input.Correo;
-            }
-        }
+    if (Input.Id == 0)
+    {
+        _context.Proveedores.Add(Input);
         await _context.SaveChangesAsync();
-        return RedirectToPage();
-    }
 
-    public async Task<IActionResult> OnPostEliminar(int id)
-    {
-        if (!User.IsInRole("Administrador"))
-    {
-        return Forbid();
+        Bitacora("creado", "Proveedor", Input.Id, $"Proveedor '{Input.Nombre}' registrado");
     }
-        var found = await _context.Proveedores.FindAsync(id);
+    else
+    {
+        var found = await _context.Proveedores.FindAsync(Input.Id);
         if (found is not null)
         {
-            _context.Proveedores.Remove(found);
+            var resumen = $"'{found.Nombre}' → '{Input.Nombre}', teléfono {found.Telefono} → {Input.Telefono}";
+
+            found.Nombre = Input.Nombre;
+            found.Ubicacion = Input.Ubicacion;
+            found.Telefono = Input.Telefono;
+            found.Correo = Input.Correo;
+
+            Bitacora("actualizado", "Proveedor", Input.Id, resumen);
         }
-        await _context.SaveChangesAsync();
-        return RedirectToPage();
+    }
+    await _context.SaveChangesAsync();
+    return RedirectToPage();
+    }
+
+   public async Task<IActionResult> OnPostEliminar(int id)
+    {
+    var found = await _context.Proveedores.FindAsync(id);
+    if (found is not null)
+    {
+        Bitacora("eliminado", "Proveedor", found.Id,
+                 $"Proveedor '{found.Nombre}' ({found.Telefono}) eliminado");
+
+        _context.Proveedores.Remove(found);
+    }
+    await _context.SaveChangesAsync();
+    return RedirectToPage();
+    }
+    private void Bitacora(string accion, string entidad, int id, string detalle)
+    {
+    _context.Movimientos.Add(new Movimiento
+    {
+        Accion = accion,
+        Entidad = entidad,
+        EntidadId = id,
+        Detalle = detalle
+    });
     }
 }

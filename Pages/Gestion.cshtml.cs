@@ -50,7 +50,9 @@ public class GestionModel : PageModel
     {
         if (Input.Id == 0)
         {
-            _context.Productos.Add(Input);                 
+            _context.Productos.Add(Input);         
+            await _context.SaveChangesAsync();  
+            Bitacora("creado", "Producto", Input.Id, $"Producto '{Input.Nombre}' registrado");  
         }
         else
         {
@@ -68,9 +70,11 @@ public class GestionModel : PageModel
                 found.Precio = Input.Precio;
                 found.Descripcion = Input.Descripcion;
             }
+            Bitacora("actualizado", "Producto", Input.Id, $"Producto '{Input.Nombre}' actualizado");
         }
         await _context.SaveChangesAsync();                 
         return RedirectToPage();
+        
     }
 
     public async Task<IActionResult> OnPostEliminar(int id)
@@ -78,9 +82,20 @@ public class GestionModel : PageModel
         var found = await _context.Productos.FindAsync(id);   
         if (found is not null)
         {
-            _context.Productos.Remove(found);                 
+            Bitacora("eliminado", "Producto", found.Id, $"Producto '{found.Nombre}' eliminado");
+            _context.Productos.Remove(found);                  
         }
-        await _context.SaveChangesAsync();                 
+        await _context.SaveChangesAsync();                
         return RedirectToPage();
+    }
+    private void Bitacora(string accion, string entidad, int id, string detalle)
+    {
+    _context.Movimientos.Add(new Movimiento
+    {
+        Accion = accion,
+        Entidad = entidad,
+        EntidadId = id,
+        Detalle = detalle
+    });
     }
 }

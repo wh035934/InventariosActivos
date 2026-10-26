@@ -182,16 +182,6 @@ else
                             <option value="Ventas">Ventas</option>
                         </select>
                     </div>
-                    @if(User.IsInRole("Administrador"))
-                    {
-                    <div class="mb-3">
-                        <label class="form-label">Rol</label>
-                        <select class="form-select" asp-for="PerfilInput.Rol" required>
-                            <option value="Administrador">Administrador</option>
-                            <option value="Empleado">Empleado</option>
-                        </select>
-                    </div>
-                    }
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-primary w-100">Guardar Cambios</button>

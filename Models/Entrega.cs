@@ -6,5 +6,13 @@ public class Entrega
     public string Nombre { get; set; } = "";
     public string Puesto { get; set; } = "";
     public string Area { get; set; } = "";
-    public string Estado { get; set; } = "activa";
+
+    public DateTime Fecha { get; set; } = DateTime.UtcNow;
+    public string? FotoRuta { get; set; }
+    public string? FirmaRuta { get; set; }
+    public DateTime? FechaCierre { get; set; }
+
+    public bool Cerrada => FirmaRuta != null;
+    public List<EntregaDetalle> Detalles { get; set; } = new();
 }
+

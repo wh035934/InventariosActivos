@@ -12,4 +12,6 @@ public class Producto
     public string FechaRegistro { get; set; } = "";
     public decimal Precio { get; set; }
     public string Descripcion { get; set; } = "";
+
+    public List<EntregaDetalle> Detalles { get; set; } = new();
 }
