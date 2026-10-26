@@ -40,8 +40,8 @@ public class EntregasModel : PageModel
     {
         if (archivo is null || archivo.Length == 0) return (null, null);
 
-        if (archivo.Length > 5 * 1024 * 1024)
-            return (null, "La imagen supera el máximo de 5 MB.");
+        if (archivo.Length > 20 * 1024 * 1024)
+            return (null, "La imagen supera el máximo de 20 MB.");
 
         var ext = Path.GetExtension(archivo.FileName).ToLowerInvariant();
         if (!Extensiones.Contains(ext))
