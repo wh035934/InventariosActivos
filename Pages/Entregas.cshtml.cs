@@ -26,7 +26,7 @@ public class EntregasModel : PageModel
     [BindProperty]
     public List<EntregaDetalle> Detalles { get; set; } = new();
 
-    private const int FilasFormulario = 8; 
+    private const int FilasFormulario = 1; 
 
     private readonly InventarioContext _context;
     public EntregasModel(InventarioContext context)

@@ -3,10 +3,10 @@ using InventarioActivos.Data;
 using Microsoft.AspNetCore.Authentication.Cookies;
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+
 builder.Services.AddRazorPages(options =>
 {
-    // Toda la app exige sesión, como en el React: sin login no se ve nada
+    
     options.Conventions.AuthorizeFolder("/");
     options.Conventions.AllowAnonymousToPage("/Login");
     options.Conventions.AllowAnonymousToPage("/Error");
