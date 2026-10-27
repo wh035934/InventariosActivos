@@ -103,17 +103,17 @@
                     <div class="col-md-6">
                         <label class="form-label">Foto de artículos</label>
                         <input type="file" class="form-control" asp-for="Foto" accept=".jpg,.jpeg,.png,.webp" />
-                        @if (!string.IsNullOrEmpty(Model.Input.FotoRuta))
+                        @if (!string.IsNullOrEmpty(Model.FotoEdicionUrl))
                         {
-                            <img src="@Model.Input.FotoRuta" class="img-thumbnail mt-2" style="max-height:120px" />
+                            <img src="@Model.FotoEdicionUrl" class="img-thumbnail mt-2" style="max-height:120px" />
                         }
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Firma / hoja escaneada</label>
                         <input type="file" class="form-control" asp-for="Firma" accept=".jpg,.jpeg,.png,.webp" />
-                        @if (!string.IsNullOrEmpty(Model.Input.FirmaRuta))
+                        @if (!string.IsNullOrEmpty(Model.FirmaEdicionUrl))
                         {
-                            <img src="@Model.Input.FirmaRuta" class="img-thumbnail mt-2" style="max-height:120px" />
+                            <img src="@Model.FirmaEdicionUrl" class="img-thumbnail mt-2" style="max-height:120px" />
                         }
                     </div>
                 </div>
@@ -199,18 +199,18 @@
                                 <span class="badge @(e.Cerrada ? "bg-success" : "bg-secondary")">
                                     @(e.Cerrada ? "CERRADA" : "PENDIENTE")
                                 </span>
-                                @if (e.FotoRuta is not null)
+                                @if (Model.FotosUrl.TryGetValue(e.Id, out var fotoUrl) && fotoUrl is not null)
                                 {
-                                    <img src="@e.FotoRuta" title="Foto" style="height:28px; border-radius:4px;" />
+                                    <img src="@fotoUrl" title="Foto" style="height:28px; border-radius:4px;" />
                                 }
-                                @if (e.FirmaRuta is not null)
+                                @if (Model.FirmasUrl.TryGetValue(e.Id, out var firmaUrl) && firmaUrl is not null)
                                 {
-                                    <img src="@e.FirmaRuta" title="Firma" style="height:28px; border-radius:4px;" />
+                                    <img src="@firmaUrl" title="Firma" style="height:28px; border-radius:4px;" />
                                 }
                             </td>
                             <td>
                                 <div class="d-flex gap-2">
-                                    <a class="btn btn-link btn-sm" asp-page="/EntregaImprimir" asp-route-id="@e.Id" title="Imprimir">🖨</a>
+                                    <a class="btn btn-link btn-sm" asp-page="/Entregas" asp-page-handler="Pdf" asp-route-id="@e.Id">Descargar PDF</a>
                                     <a class="btn btn-link btn-sm" asp-page="/Entregas" asp-route-editId="@e.Id">Edit</a>
                                     <form method="post" asp-page-handler="Eliminar" asp-route-id="@e.Id" onsubmit="return confirm('¿Eliminar entrega?');">
                                         <button type="submit" class="btn btn-link btn-sm text-danger p-0" title="Eliminar">

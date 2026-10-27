@@ -3,6 +3,7 @@ using InventarioActivos.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using SkiaSharp;
 
 namespace InventarioActivos.Pages;
 
@@ -10,6 +11,10 @@ public class EntregasModel : PageModel
 {
     public List<Entrega> Entregas { get; set; } = new();
 
+    public Dictionary<int, string?> FotosUrl { get; set; } = new();
+    public Dictionary<int, string?> FirmasUrl { get; set; } = new();
+    public string? FotoEdicionUrl { get; set; }
+    public string? FirmaEdicionUrl { get; set; }
 
     public List<Producto> Productos { get; set; } = new();
 
@@ -29,37 +34,112 @@ public class EntregasModel : PageModel
     private const int FilasFormulario = 1; 
 
     private readonly InventarioContext _context;
-    public EntregasModel(InventarioContext context)
+    private readonly SupabaseStorageService _storage;
+    private readonly EntregaPdfGenerator _pdfGenerator;
+    private readonly IWebHostEnvironment _environment;
+
+    public EntregasModel(
+        InventarioContext context,
+        SupabaseStorageService storage,
+        EntregaPdfGenerator pdfGenerator,
+        IWebHostEnvironment environment)
     {
         _context = context;
+        _storage = storage;
+        _pdfGenerator = pdfGenerator;
+        _environment = environment;
     }
 
     private static readonly string[] Extensiones = { ".jpg", ".jpeg", ".png", ".webp" };
 
-    private static (string? ruta, string? error) GuardarArchivo(IFormFile? archivo)
+    private static string? ValidarArchivo(IFormFile? archivo)
     {
-        if (archivo is null || archivo.Length == 0) return (null, null);
+        if (archivo is null || archivo.Length == 0) return null;
 
         if (archivo.Length > 20 * 1024 * 1024)
-            return (null, "La imagen supera el máximo de 20 MB.");
+            return "La imagen supera el máximo de 20 MB.";
 
         var ext = Path.GetExtension(archivo.FileName).ToLowerInvariant();
         if (!Extensiones.Contains(ext))
-            return (null, $"Formato no permitido: {ext}. Usa jpg, jpeg, png o webp.");
+            return $"Formato no permitido: {ext}. Usa jpg, jpeg, png o webp.";
 
-        var nombre = $"{Guid.NewGuid()}{ext}";
-        var destino = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", nombre);
+        using var stream = archivo.OpenReadStream();
+        using var bitmap = SKBitmap.Decode(stream);
+        if (bitmap is null)
+            return "El archivo seleccionado no es una imagen válida.";
+        if ((long)bitmap.Width * bitmap.Height > 25_000_000)
+            return "La imagen tiene demasiada resolución para procesarse.";
 
-        using var stream = new FileStream(destino, FileMode.Create);
-        archivo.CopyTo(stream);
+        return null;
+    }
 
-        return ($"/uploads/{nombre}", null);
+    private async Task<string?> GuardarArchivoAsync(IFormFile? archivo, string tipo)
+    {
+        if (archivo is null || archivo.Length == 0)
+            return null;
+
+        var extension = Path.GetExtension(archivo.FileName).ToLowerInvariant();
+        var ruta = $"evidencias/{Guid.NewGuid():N}/{tipo}{extension}";
+        var contentType = extension switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".webp" => "image/webp",
+            _ => throw new InvalidOperationException("El formato de imagen no está permitido.")
+        };
+
+        await using var stream = archivo.OpenReadStream();
+        await _storage.UploadAsync(ruta, stream, contentType);
+        return ruta;
+    }
+
+    private async Task<string?> ObtenerUrlAsync(string? ruta)
+    {
+        if (string.IsNullOrWhiteSpace(ruta))
+            return null;
+
+        if (ruta.StartsWith("/uploads/", StringComparison.Ordinal))
+            return ruta;
+
+        return await _storage.CreateSignedUrlAsync(ruta);
+    }
+
+    private async Task<byte[]?> LeerArchivoAsync(string? ruta)
+    {
+        if (string.IsNullOrWhiteSpace(ruta))
+            return null;
+
+        if (ruta.StartsWith("/uploads/", StringComparison.Ordinal))
+        {
+            var nombre = Path.GetFileName(ruta);
+            var archivoLocal = Path.Combine(_environment.WebRootPath, "uploads", nombre);
+            if (!System.IO.File.Exists(archivoLocal))
+                throw new FileNotFoundException("No se encontró una imagen de evidencia existente.");
+
+            return await System.IO.File.ReadAllBytesAsync(archivoLocal);
+        }
+
+        return await _storage.DownloadAsync(ruta);
+    }
+
+    private static byte[]? ConvertirImagenParaPdf(byte[]? bytes)
+    {
+        if (bytes is null)
+            return null;
+
+        using var image = SKBitmap.Decode(bytes)
+            ?? throw new InvalidOperationException("No se pudo leer una imagen de evidencia.");
+        using var skImage = SKImage.FromBitmap(image);
+        using var jpeg = skImage.Encode(SKEncodedImageFormat.Jpeg, 90)
+            ?? throw new InvalidOperationException("No se pudo preparar una imagen para el PDF.");
+        return jpeg.ToArray();
     }
 
     public async Task OnGet(int? editId)
     {
         Entregas = await _context.Entregas.ToListAsync();
         Productos = await _context.Productos.OrderBy(p => p.Nombre).ToListAsync();
+        await CargarUrlsListaAsync();
 
         Detalles = Enumerable.Range(0, FilasFormulario)
                              .Select(_ => new EntregaDetalle()).ToList();
@@ -85,16 +165,35 @@ public class EntregasModel : PageModel
                     FechaCierre = found.FechaCierre,
                     Detalles = found.Detalles   
                 };
+                await CargarUrlsEdicionAsync();
             }
         }
     }
 
-    
+    private async Task CargarUrlsListaAsync()
+    {
+        FotosUrl = new Dictionary<int, string?>();
+        FirmasUrl = new Dictionary<int, string?>();
+
+        foreach (var entrega in Entregas)
+        {
+            FotosUrl[entrega.Id] = await ObtenerUrlAsync(entrega.FotoRuta);
+            FirmasUrl[entrega.Id] = await ObtenerUrlAsync(entrega.FirmaRuta);
+        }
+    }
+
+    private async Task CargarUrlsEdicionAsync()
+    {
+        FotoEdicionUrl = await ObtenerUrlAsync(Input.FotoRuta);
+        FirmaEdicionUrl = await ObtenerUrlAsync(Input.FirmaRuta);
+    }
+
     private async Task<IActionResult> ErrorPost(string mensaje)
     {
         TempData["Error"] = mensaje;
         Entregas = await _context.Entregas.ToListAsync();
         Productos = await _context.Productos.OrderBy(p => p.Nombre).ToListAsync();
+        await CargarUrlsListaAsync();
 
         if (Input.Id != 0)
         {
@@ -112,17 +211,33 @@ public class EntregasModel : PageModel
                 .Include(d => d.Producto)
                 .Where(d => d.EntregaId == Input.Id)
                 .ToListAsync();
+
+            await CargarUrlsEdicionAsync();
         }
         return Page();
     }
 
     public async Task<IActionResult> OnPostGuardar()
     {
-        var (rutaFoto, errFoto) = GuardarArchivo(Foto);
-        var (rutaFirma, errFirma) = GuardarArchivo(Firma);
-        var errorArchivo = errFoto ?? errFirma;
+        var errorArchivo = ValidarArchivo(Foto) ?? ValidarArchivo(Firma);
         if (errorArchivo is not null)
-            return await ErrorPost(errorArchivo); 
+            return await ErrorPost(errorArchivo);
+
+        string? rutaFoto;
+        string? rutaFirma;
+        try
+        {
+            rutaFoto = await GuardarArchivoAsync(Foto, "foto");
+            rutaFirma = await GuardarArchivoAsync(Firma, "firma");
+        }
+        catch (HttpRequestException ex)
+        {
+            return await ErrorPost($"No fue posible guardar la evidencia en Supabase Storage: {ex.Message}");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return await ErrorPost(ex.Message);
+        }
 
         if (Input.Id == 0)
         {
@@ -207,6 +322,46 @@ public class EntregasModel : PageModel
             }
             await _context.SaveChangesAsync();
         }
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnGetPdf(int id)
+    {
+        var entrega = await _context.Entregas
+            .Include(e => e.Detalles)
+            .ThenInclude(d => d.Producto)
+            .FirstOrDefaultAsync(e => e.Id == id);
+
+        if (entrega is null)
+            return NotFound();
+
+        try
+        {
+            var foto = ConvertirImagenParaPdf(await LeerArchivoAsync(entrega.FotoRuta));
+            var firma = ConvertirImagenParaPdf(await LeerArchivoAsync(entrega.FirmaRuta));
+            var pdf = _pdfGenerator.Generate(entrega, foto, firma);
+
+            await using var pdfStream = new MemoryStream(pdf);
+            await _storage.UploadAsync(
+                $"entregas/{entrega.Id}/formato-entrega.pdf",
+                pdfStream,
+                "application/pdf");
+
+            return File(pdf, "application/pdf", $"Entrega-{entrega.Id}.pdf");
+        }
+        catch (HttpRequestException ex)
+        {
+            TempData["Error"] = $"No fue posible acceder a Supabase Storage: {ex.Message}";
+        }
+        catch (InvalidOperationException ex)
+        {
+            TempData["Error"] = ex.Message;
+        }
+        catch (FileNotFoundException ex)
+        {
+            TempData["Error"] = ex.Message;
+        }
+
         return RedirectToPage();
     }
 
