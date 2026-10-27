@@ -180,6 +180,163 @@ public sealed class EntregaPdfGenerator
         }
     }
 
+    public byte[] GenerateInventario(
+        IReadOnlyList<Producto> productos,
+        string? ubicacion,
+        string? categoria)
+    {
+        var paginas = new List<ContenidoPagina>();
+        var pagina = CrearContenidoPagina();
+        var y = Margen;
+        var anchoContenido = AnchoPagina - Margen * 2;
+        var cultura = CultureInfo.GetCultureInfo("es-MX");
+
+        void Texto(string texto, double x, double top, double tamano, bool negrita = false)
+        {
+            var fuente = negrita ? "F2" : "F1";
+            var baseline = AltoPagina - top - tamano;
+            pagina.Comandos.Append("BT /").Append(fuente).Append(' ')
+                .Append(Formato(tamano)).Append(" Tf 1 0 0 1 ")
+                .Append(Formato(x)).Append(' ').Append(Formato(baseline))
+                .Append(" Tm (").Append(EscaparTexto(texto)).Append(") Tj ET\n");
+        }
+
+        double TextoEnLineas(string texto, double x, double top, double ancho, double tamano)
+        {
+            var lineas = AjustarLineas(texto, ancho, tamano);
+            for (var i = 0; i < lineas.Count; i++)
+                Texto(lineas[i], x, top + i * tamano * 1.4, tamano);
+
+            return lineas.Count * tamano * 1.4;
+        }
+
+        void Linea(double x1, double top1, double x2, double top2)
+        {
+            pagina.Comandos.Append(Formato(x1)).Append(' ')
+                .Append(Formato(AltoPagina - top1)).Append(" m ")
+                .Append(Formato(x2)).Append(' ')
+                .Append(Formato(AltoPagina - top2)).Append(" l S\n");
+        }
+
+        void Rectangulo(double top, double alto)
+        {
+            pagina.Comandos.Append(Formato(Margen)).Append(' ')
+                .Append(Formato(AltoPagina - top - alto)).Append(' ')
+                .Append(Formato(anchoContenido)).Append(' ')
+                .Append(Formato(alto)).Append(" re S\n");
+        }
+
+        string FormatearDinero(decimal valor) => "$" + valor.ToString("N2", cultura);
+
+        void EncabezadoTabla()
+        {
+            const double altoFila = 28;
+            Rectangulo(y, altoFila);
+            Texto("Producto", Margen + 6, y + 8, 8, true);
+            Texto("Categoría", Margen + 163, y + 8, 8, true);
+            Texto("Unidades", Margen + 267, y + 8, 8, true);
+            Texto("Precio unitario", Margen + 314, y + 8, 8, true);
+            Texto("Valor", Margen + 421, y + 8, 8, true);
+            y += altoFila;
+        }
+
+        void EncabezadoContinuacion(string nombreUbicacion)
+        {
+            pagina = CrearContenidoPagina();
+            y = Margen;
+            Texto("REPORTE DE INVENTARIO (continuación)", Margen, y, 13, true);
+            y += 28;
+            TextoEnLineas($"Sección o bodega: {nombreUbicacion}",
+                Margen, y, anchoContenido, 10);
+            y += 20;
+            EncabezadoTabla();
+        }
+
+        Texto("REPORTE DE INVENTARIO", Margen, y, 17, true);
+        y += 28;
+        Texto($"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}", Margen, y, 9);
+        y += 17;
+        TextoEnLineas($"Sección o bodega: {ubicacion ?? "Todas"}",
+            Margen, y, anchoContenido, 9);
+        y += 14;
+        TextoEnLineas($"Categoría: {categoria ?? "Todas"}",
+            Margen, y, anchoContenido, 9);
+        y += 20;
+
+        Linea(Margen, y, AnchoPagina - Margen, y);
+        y += 15;
+        Texto($"Productos distintos: {productos.Count}", Margen, y, 10, true);
+        y += 16;
+        Texto($"Unidades en inventario: {productos.Sum(p => p.Cantidad)}", Margen, y, 10, true);
+        y += 16;
+        Texto($"Valor total: {FormatearDinero(productos.Sum(p => p.Cantidad * p.Precio))}",
+            Margen, y, 10, true);
+        y += 24;
+
+        if (productos.Count == 0)
+        {
+            Texto("No hay productos para los filtros seleccionados.", Margen, y, 10);
+        }
+
+        foreach (var grupo in productos
+                     .GroupBy(p => string.IsNullOrWhiteSpace(p.Ubicacion)
+                         ? "Sin ubicación"
+                         : p.Ubicacion)
+                     .OrderBy(g => g.Key))
+        {
+            if (y + 75 > AltoPagina - Margen)
+            {
+                pagina = CrearContenidoPagina();
+                y = Margen;
+            }
+
+            TextoEnLineas($"Sección o bodega: {grupo.Key}",
+                Margen, y, anchoContenido, 11);
+            y += 19;
+            Texto(
+                $"Subtotal: {grupo.Count()} productos | {grupo.Sum(p => p.Cantidad)} unidades | {FormatearDinero(grupo.Sum(p => p.Cantidad * p.Precio))}",
+                Margen, y, 9, true);
+            y += 18;
+            EncabezadoTabla();
+
+            foreach (var producto in grupo.OrderBy(p => p.Nombre))
+            {
+                var lineasNombre = AjustarLineas(producto.Nombre, 150, 8);
+                var lineasCategoria = AjustarLineas(producto.Categoria, 96, 8);
+                var altoFila = Math.Max(28, Math.Max(lineasNombre.Count, lineasCategoria.Count) * 12 + 10);
+
+                if (y + altoFila > AltoPagina - Margen)
+                {
+                    EncabezadoContinuacion(grupo.Key);
+                }
+
+                Rectangulo(y, altoFila);
+                for (var i = 0; i < lineasNombre.Count; i++)
+                    Texto(lineasNombre[i], Margen + 6, y + 6 + i * 12, 8);
+                for (var i = 0; i < lineasCategoria.Count; i++)
+                    Texto(lineasCategoria[i], Margen + 163, y + 6 + i * 12, 8);
+
+                Texto(producto.Cantidad.ToString(CultureInfo.InvariantCulture),
+                    Margen + 267, y + 6, 8);
+                Texto(FormatearDinero(producto.Precio), Margen + 314, y + 6, 8);
+                Texto(FormatearDinero(producto.Cantidad * producto.Precio),
+                    Margen + 421, y + 6, 8);
+                y += altoFila;
+            }
+
+            y += 16;
+        }
+
+        return CrearPdf(paginas, []);
+
+        ContenidoPagina CrearContenidoPagina()
+        {
+            var nueva = new ContenidoPagina();
+            paginas.Add(nueva);
+            return nueva;
+        }
+    }
+
     private static byte[] CrearPdf(IReadOnlyList<ContenidoPagina> paginas, IReadOnlyList<ImagenPdf> imagenes)
     {
         var objetos = new List<byte[]?> { null };

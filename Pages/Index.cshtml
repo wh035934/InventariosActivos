@@ -43,4 +43,157 @@
             </table>
         </div>
     </div>
+
+    <section class="mt-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div>
+                <h2 class="h4 mb-1">Reporte de inventario</h2>
+                <p class="text-muted mb-0">Valor calculado como cantidad disponible × precio unitario.</p>
+            </div>
+            <a class="btn btn-outline-primary"
+               asp-page-handler="Pdf"
+               asp-route-ubicacion="@Model.UbicacionSeleccionada"
+               asp-route-categoria="@Model.CategoriaSeleccionada"
+               target="_blank"
+               rel="noopener">
+                Descargar reporte PDF
+            </a>
+        </div>
+
+        <form method="get" class="card card-body mb-3">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label" for="filtro-ubicacion">Sección o bodega</label>
+                    <select class="form-select" id="filtro-ubicacion" name="ubicacion">
+                        <option value="">Todas</option>
+                        @foreach (var ubicacion in Model.Ubicaciones)
+                        {
+                            <option value="@ubicacion" selected="@(Model.UbicacionSeleccionada == ubicacion ? "selected" : null)">@ubicacion</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label" for="filtro-categoria">Categoría</label>
+                    <select class="form-select" id="filtro-categoria" name="categoria">
+                        <option value="">Todas</option>
+                        @foreach (var categoria in Model.Categorias)
+                        {
+                            <option value="@categoria" selected="@(Model.CategoriaSeleccionada == categoria ? "selected" : null)">@categoria</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1">Filtrar</button>
+                    <a asp-page="/Index" class="btn btn-outline-secondary">Limpiar</a>
+                </div>
+            </div>
+        </form>
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="text-muted">Productos distintos</div>
+                        <div class="fs-4 fw-semibold">@Model.TotalProductos</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="text-muted">Unidades en inventario</div>
+                        <div class="fs-4 fw-semibold">@Model.TotalUnidades</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="text-muted">Valor total del inventario</div>
+                        <div class="fs-4 fw-semibold">@Model.ValorTotal.ToString("C2")</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">Totales por sección o bodega</div>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Sección o bodega</th>
+                            <th>Productos distintos</th>
+                            <th>Unidades</th>
+                            <th>Valor del inventario</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.ResumenPorUbicacion.Count == 0)
+                        {
+                            <tr><td colspan="4" class="text-center text-muted">No hay productos para los filtros seleccionados.</td></tr>
+                        }
+                        else
+                        {
+                            @foreach (var resumen in Model.ResumenPorUbicacion)
+                            {
+                                <tr>
+                                    <td>@resumen.Ubicacion</td>
+                                    <td>@resumen.Productos</td>
+                                    <td>@resumen.Unidades</td>
+                                    <td>@resumen.Valor.ToString("C2")</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr class="fw-semibold">
+                            <td>Total</td>
+                            <td>@Model.TotalProductos</td>
+                            <td>@Model.TotalUnidades</td>
+                            <td>@Model.ValorTotal.ToString("C2")</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">Detalle de productos incluidos en el reporte</div>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Categoría</th>
+                            <th>Sección o bodega</th>
+                            <th>Unidades</th>
+                            <th>Precio unitario</th>
+                            <th>Valor en inventario</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.ProductosReporte.Count == 0)
+                        {
+                            <tr><td colspan="6" class="text-center text-muted">No hay productos para los filtros seleccionados.</td></tr>
+                        }
+                        else
+                        {
+                            @foreach (var producto in Model.ProductosReporte)
+                            {
+                                <tr>
+                                    <td>@producto.Nombre</td>
+                                    <td>@producto.Categoria</td>
+                                    <td>@(string.IsNullOrWhiteSpace(producto.Ubicacion) ? "Sin ubicación" : producto.Ubicacion)</td>
+                                    <td>@producto.Cantidad</td>
+                                    <td>@producto.Precio.ToString("C2")</td>
+                                    <td>@((producto.Cantidad * producto.Precio).ToString("C2"))</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 </div>

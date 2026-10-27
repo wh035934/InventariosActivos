@@ -24,6 +24,7 @@ builder.Services.AddDbContext<InventarioContext>(options =>
 options.UseNpgsql(builder.Configuration.GetConnectionString("InventariosActivos")));
 builder.Services.AddHttpClient<SupabaseStorageService>();
 builder.Services.AddScoped<EntregaPdfGenerator>();
+builder.Services.AddHostedService<MovimientosRetentionService>();
 builder.WebHost.ConfigureKestrel(serverOptions =>
 {
     serverOptions.Limits.MaxRequestBodySize = 50 * 1024 * 1024; // 50 MB

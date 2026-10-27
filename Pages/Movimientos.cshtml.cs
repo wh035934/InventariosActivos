@@ -16,9 +16,11 @@ public class MovimientoModel : PageModel
     }
     public async Task OnGet()
     {
+        var fechaLimite = DateTime.UtcNow.AddMonths(-2);
+
         Movimientos = await _context.Movimientos
+            .Where(m => m.Fecha >= fechaLimite)
             .OrderByDescending(m => m.Fecha)
-            .Take(200)
             .ToListAsync();
 
 
