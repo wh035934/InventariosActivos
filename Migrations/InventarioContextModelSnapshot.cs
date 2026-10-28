@@ -22,6 +22,23 @@ namespace InventarioActivos.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("InventarioActivos.Models.Categoria", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Categorias");
+                });
+
             modelBuilder.Entity("InventarioActivos.Models.Entrega", b =>
                 {
                     b.Property<int>("Id")
@@ -54,7 +71,12 @@ namespace InventarioActivos.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int?>("SucursalId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("SucursalId");
 
                     b.ToTable("Entregas");
                 });
@@ -78,9 +100,10 @@ namespace InventarioActivos.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("EntregaId");
-
                     b.HasIndex("ProductoId");
+
+                    b.HasIndex("EntregaId", "ProductoId")
+                        .IsUnique();
 
                     b.ToTable("EntregasDetalles");
                 });
@@ -131,6 +154,9 @@ namespace InventarioActivos.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int?>("CategoriaId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Descripcion")
                         .IsRequired()
                         .HasColumnType("text");
@@ -154,11 +180,18 @@ namespace InventarioActivos.Migrations
                     b.Property<decimal>("Precio")
                         .HasColumnType("numeric");
 
+                    b.Property<int?>("ProveedorId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Ubicacion")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CategoriaId");
+
+                    b.HasIndex("ProveedorId");
 
                     b.ToTable("Productos");
                 });
@@ -190,6 +223,68 @@ namespace InventarioActivos.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Proveedores");
+                });
+
+            modelBuilder.Entity("InventarioActivos.Models.Stock", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Cantidad")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("FechaRegistro")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ProductoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SucursalId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SucursalId");
+
+                    b.HasIndex("ProductoId", "SucursalId")
+                        .IsUnique();
+
+                    b.ToTable("Stock");
+                });
+
+            modelBuilder.Entity("InventarioActivos.Models.Sucursal", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Activa")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Direccion")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Telefono")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Sucursales");
                 });
 
             modelBuilder.Entity("InventarioActivos.Models.Usuario", b =>
@@ -226,6 +321,13 @@ namespace InventarioActivos.Migrations
                     b.ToTable("Usuarios");
                 });
 
+            modelBuilder.Entity("InventarioActivos.Models.Entrega", b =>
+                {
+                    b.HasOne("InventarioActivos.Models.Sucursal", null)
+                        .WithMany("Entregas")
+                        .HasForeignKey("SucursalId");
+                });
+
             modelBuilder.Entity("InventarioActivos.Models.EntregaDetalle", b =>
                 {
                     b.HasOne("InventarioActivos.Models.Entrega", "Entrega")
@@ -237,12 +339,51 @@ namespace InventarioActivos.Migrations
                     b.HasOne("InventarioActivos.Models.Producto", "Producto")
                         .WithMany("Detalles")
                         .HasForeignKey("ProductoId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Entrega");
 
                     b.Navigation("Producto");
+                });
+
+            modelBuilder.Entity("InventarioActivos.Models.Producto", b =>
+                {
+                    b.HasOne("InventarioActivos.Models.Categoria", "CategoriaAsignada")
+                        .WithMany("Productos")
+                        .HasForeignKey("CategoriaId");
+
+                    b.HasOne("InventarioActivos.Models.Proveedor", "Proveedor")
+                        .WithMany()
+                        .HasForeignKey("ProveedorId");
+
+                    b.Navigation("CategoriaAsignada");
+
+                    b.Navigation("Proveedor");
+                });
+
+            modelBuilder.Entity("InventarioActivos.Models.Stock", b =>
+                {
+                    b.HasOne("InventarioActivos.Models.Producto", "Producto")
+                        .WithMany("Stocks")
+                        .HasForeignKey("ProductoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("InventarioActivos.Models.Sucursal", "Sucursal")
+                        .WithMany("Stocks")
+                        .HasForeignKey("SucursalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Producto");
+
+                    b.Navigation("Sucursal");
+                });
+
+            modelBuilder.Entity("InventarioActivos.Models.Categoria", b =>
+                {
+                    b.Navigation("Productos");
                 });
 
             modelBuilder.Entity("InventarioActivos.Models.Entrega", b =>
@@ -253,6 +394,15 @@ namespace InventarioActivos.Migrations
             modelBuilder.Entity("InventarioActivos.Models.Producto", b =>
                 {
                     b.Navigation("Detalles");
+
+                    b.Navigation("Stocks");
+                });
+
+            modelBuilder.Entity("InventarioActivos.Models.Sucursal", b =>
+                {
+                    b.Navigation("Entregas");
+
+                    b.Navigation("Stocks");
                 });
 #pragma warning restore 612, 618
         }
