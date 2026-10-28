@@ -482,3 +482,6 @@ $RECYCLE.BIN/
 *.swp
 wwwroot/uploads/*
 !wwwroot/uploads/.gitkeep
+# Respaldos de base de datos
+respaldo_*
+*.dump
